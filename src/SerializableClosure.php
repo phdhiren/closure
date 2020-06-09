@@ -250,11 +250,10 @@ class SerializableClosure implements Serializable
             $this->scope = new ClosureScope();
             $this->code['use'] = $this->resolveUseVariables($this->code['use']);
             $this->mapPointers($this->code['use']);
-            extract($this->code['use'], EXTR_OVERWRITE | EXTR_REFS);
             $this->scope = null;
         }
 
-        $this->closure = include(ClosureStream::STREAM_PROTO . '://' . $this->code['function']);
+        $this->closure = self::rebuildClosure($this->code['use'], $this->code['function']);
 
         if($this->code['this'] === $this){
             $this->code['this'] = null;
@@ -663,4 +662,17 @@ class SerializableClosure implements Serializable
         }
     }
 
+    /**
+     * @param array$use
+     * @param string $code
+     * @return Closure
+     */
+    private static function rebuildClosure($use, $code)
+    {
+        ${'#use'} = $use;
+        ${'#code'} = $code;
+        unset($use, $code);
+        extract(${'#use'}, EXTR_OVERWRITE | EXTR_REFS);
+        return include(ClosureStream::STREAM_PROTO . '://' . ${'#code'});
+    }
 }
